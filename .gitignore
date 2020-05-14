@@ -3,3 +3,4 @@
 *.key
 *.wasm
 go.sum
+.idea
