@@ -1,0 +1,5 @@
+*.ini
+*.db
+*.key
+*.wasm
+go.sum
