@@ -16,6 +16,7 @@
 package xuperchain_rpc
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -60,17 +61,18 @@ func TestClient_GetBalance(t *testing.T) {
 }
 
 func TestClient_GetBlockByHeight(t *testing.T) {
-	height := 49174
+	height := 258917
 	block, err := tc.GetBlockByHeight(int64(height))
 	if err != nil {
 		t.Errorf("GetBlockByHeight failed, err: %v", err)
 		return
 	}
-	log.Infof("block: %+v", block)
+	txtJson, _ := json.Marshal(block)
+	log.Infof("block: %v", string(txtJson))
 }
 
 func TestClient_GetBlock(t *testing.T) {
-	hash := "43ee4269feebe9616a9494460ebc6ff61cede95443476064d1ab3b12b1801cda"
+	hash := "667be24256be3fbc7adb7e38d0ba803a714a61e309b2d15ba673112713333a0f"
 	block, err := tc.GetBlock(hash)
 	if err != nil {
 		t.Errorf("GetBlock failed, err: %v", err)
@@ -101,7 +103,7 @@ func TestClient_GetBlockChains(t *testing.T) {
 }
 
 func TestClient_QueryTx(t *testing.T) {
-	txid := "4d432efbe9b256b12bb1ee93a8fb76cad6657c52b7bebf72b773886182cdb183"
+	txid := "8b857276f4b629d0bff671b35268bce7199a11c68dd96f3fa5e7cbef5e5a95d3"
 	tx, err := tc.QueryTx(txid)
 	if err != nil {
 		t.Errorf("QueryTx failed, err: %v", err)
@@ -116,7 +118,7 @@ func TestClient_QueryTx(t *testing.T) {
 		t.Errorf("json.Unmarshal failed, err: %v", err)
 		return
 	}
-
+	fmt.Printf("blockhash: %s \n", hex.EncodeToString(tx.Tx.Blockid))
 	if nTx.String() != tx.Tx.String() {
 		fmt.Printf("\n %s \n", tx.Tx.String())
 		t.Errorf("json.Unmarshal tx is not equal to original")
@@ -173,4 +175,10 @@ func TestSplitString(t *testing.T) {
 	str2 := "wasm:hello"
 	args2 := strings.Split(str2, ":")
 	log.Infof("args2: %+v", args2)
+}
+
+func TestDecodeAddr(t *testing.T) {
+	addr := "VUdiVjJ2QnFNRkg0dGVXN0dlYUV6MTludDdwQTVDdVQz"
+	addrBit, _ := base64.StdEncoding.DecodeString(addr)
+	log.Infof("addr: %s", string(addrBit))
 }

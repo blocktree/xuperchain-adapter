@@ -24,6 +24,7 @@ import (
 const (
 	MODULE_XKERNEL = "xkernel"
 	METHOD_DEPLOY  = "Deploy"
+	EVENT_KEY = "com.github.blocktree.xcd.event"
 )
 
 type ContractDecoder struct {
@@ -173,39 +174,24 @@ func (decoder *ContractDecoder) CallSmartContractABI(wrapper openwallet.WalletDA
 		return nil, openwallet.Errorf(openwallet.ErrContractCallMsgInvalid, preErr.Error())
 	}
 
-	gas := resp.GetResponse().GetGasUsed()
-	fmt.Printf("gas used: %v\n", gas)
+	//gas := resp.GetResponse().GetGasUsed()
+	//fmt.Printf("gas used: %v\n", gas)
+	var rJson []byte
 	for _, res := range resp.GetResponse().GetResponse() {
-		fmt.Printf("contract response: %s\n", string(res))
+		//fmt.Printf("contract response: %s\n", string(res))
+		rJson = res
 	}
 
+	callResult := &openwallet.SmartContractCallResult{
+		Method: rawTx.ABIParam[0],
+	}
 
-	//callMsg, abiInstance, encErr := decoder.EncodeRawTransactionCallMsg(wrapper, rawTx)
-	//if encErr != nil {
-	//	return nil, encErr
-	//}
-	//
-	//callResult := &openwallet.SmartContractCallResult{
-	//	Method: rawTx.ABIParam[0],
-	//}
-	//
-	//result, err := decoder.wm.EthCall(*callMsg, "latest")
-	//if err != nil {
-	//	callResult.Status = openwallet.SmartContractCallResultStatusFail
-	//	callResult.Exception = err.Error()
-	//	return callResult, openwallet.ConvertError(err)
-	//}
-	//
-	//_, rJSON, err := decoder.wm.DecodeABIResult(*abiInstance, callResult.Method, result)
-	//if err != nil {
-	//	return nil, openwallet.ConvertError(err)
-	//}
-	//
-	//callResult.RawHex = result
-	//callResult.Value = rJSON
-	//callResult.Status = openwallet.SmartContractCallResultStatusSuccess
+	callResult.RawHex = hex.EncodeToString(rJson)
+	callResult.Value = string(rJson)
+	callResult.Status = openwallet.SmartContractCallResultStatusSuccess
 
-	return nil, nil
+
+	return callResult, nil
 }
 
 //创建原始交易单
@@ -331,73 +317,74 @@ func (decoder *ContractDecoder) SubmitSmartContractRawTransaction(wrapper openwa
 
 	decoder.wm.Log.Infof("rawTx.AwaitResult = %v", rawTx.AwaitResult)
 	//等待出块结果返回交易回执
-	//if rawTx.AwaitResult {
-	//	bs := decoder.wm.GetBlockScanner()
-	//	if bs == nil {
-	//		decoder.wm.Log.Errorf("adapter blockscanner is nil")
-	//		return owtx, nil
-	//	}
-	//
-	//	addrs := make(map[string]openwallet.ScanTargetResult)
-	//	contract := &rawTx.Coin.Contract
-	//	if contract == nil {
-	//		decoder.wm.Log.Errorf("rawTx.Coin.Contract is nil")
-	//		return owtx, nil
-	//	}
-	//
-	//	addrs[contract.Address] = openwallet.ScanTargetResult{SourceKey: contract.ContractID, Exist: true, TargetInfo: contract}
-	//
-	//	scanTargetFunc := func(target openwallet.ScanTargetParam) openwallet.ScanTargetResult {
-	//		result := addrs[target.ScanTarget]
-	//		if result.Exist {
-	//			return result
-	//		}
-	//		return openwallet.ScanTargetResult{SourceKey: "", Exist: false, TargetInfo: nil}
-	//	}
-	//
-	//	//默认超时90秒
-	//	if rawTx.AwaitTimeout == 0 {
-	//		rawTx.AwaitTimeout = 90
-	//	}
-	//
-	//	sleepSecond := 2 * time.Second
-	//
-	//	//计算过期时间
-	//	currentServerTime := time.Now()
-	//	expiredTime := currentServerTime.Add(time.Duration(rawTx.AwaitTimeout) * time.Second)
-	//
-	//	//等待交易单报块结果
-	//	for {
-	//
-	//		//当前重试时间
-	//		currentReDoTime := time.Now()
-	//
-	//		//decoder.wm.Log.Debugf("currentReDoTime = %s", currentReDoTime.String())
-	//		//decoder.wm.Log.Debugf("expiredTime = %s", expiredTime.String())
-	//
-	//		//超时终止
-	//		if currentReDoTime.Unix() >= expiredTime.Unix() {
-	//			break
-	//		}
-	//
-	//		_, contractResult, extractErr := bs.ExtractTransactionAndReceiptData(owtx.TxID, scanTargetFunc)
-	//		if extractErr != nil {
-	//			decoder.wm.Log.Errorf("ExtractTransactionAndReceiptData failed, err: %v", extractErr)
-	//			return owtx, nil
-	//		}
-	//
-	//		//tx := txResult[contract.ContractID]
-	//		receipt := contractResult[contract.ContractID]
-	//
-	//		if receipt != nil {
-	//			return receipt, nil
-	//		}
-	//
-	//		//等待sleepSecond秒重试
-	//		time.Sleep(sleepSecond)
-	//	}
-	//
-	//}
+	if rawTx.AwaitResult {
+		bs := decoder.wm.GetBlockScanner()
+		if bs == nil {
+			decoder.wm.Log.Errorf("adapter blockscanner is nil")
+			return owtx, nil
+		}
+
+		addrs := make(map[string]openwallet.ScanTargetResult)
+		contract := &rawTx.Coin.Contract
+		if contract == nil {
+			decoder.wm.Log.Errorf("rawTx.Coin.Contract is nil")
+			return owtx, nil
+		}
+
+		addrs[contract.Address] = openwallet.ScanTargetResult{SourceKey: contract.ContractID, Exist: true, TargetInfo: contract}
+
+		scanTargetFunc := func(target openwallet.ScanTargetParam) openwallet.ScanTargetResult {
+			result := addrs[target.ScanTarget]
+			if result.Exist {
+				return result
+			}
+			return openwallet.ScanTargetResult{SourceKey: "", Exist: false, TargetInfo: nil}
+		}
+
+		//默认超时90秒
+		if rawTx.AwaitTimeout == 0 {
+			rawTx.AwaitTimeout = 90
+		}
+
+		sleepSecond := 2 * time.Second
+
+		//计算过期时间
+		currentServerTime := time.Now()
+		expiredTime := currentServerTime.Add(time.Duration(rawTx.AwaitTimeout) * time.Second)
+
+		//等待交易单报块结果
+		for {
+
+			//当前重试时间
+			currentReDoTime := time.Now()
+
+			//decoder.wm.Log.Debugf("currentReDoTime = %s", currentReDoTime.String())
+			//decoder.wm.Log.Debugf("expiredTime = %s", expiredTime.String())
+
+			//超时终止
+			if currentReDoTime.Unix() >= expiredTime.Unix() {
+				break
+			}
+
+			_, contractResult, extractErr := bs.ExtractTransactionAndReceiptData(owtx.TxID, scanTargetFunc)
+			if extractErr != nil {
+				continue
+				//decoder.wm.Log.Errorf("ExtractTransactionAndReceiptData failed, err: %v", extractErr)
+				//return owtx, nil
+			}
+
+			//tx := txResult[contract.ContractID]
+			receipt := contractResult[contract.ContractID]
+
+			if receipt != nil {
+				return receipt, nil
+			}
+
+			//等待sleepSecond秒重试
+			time.Sleep(sleepSecond)
+		}
+
+	}
 
 	return owtx, nil
 }

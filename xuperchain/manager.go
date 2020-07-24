@@ -17,12 +17,14 @@ package xuperchain
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/blocktree/openwallet/v2/common"
 	"github.com/blocktree/openwallet/v2/log"
 	"github.com/blocktree/openwallet/v2/openwallet"
 	"github.com/blocktree/xuperchain-adapter/xuperchain_addrdec"
 	"github.com/blocktree/xuperchain-adapter/xuperchain_rpc"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/xuperchain/xuperchain/core/pb"
+	"math/big"
 	"strings"
 )
 
@@ -91,12 +93,16 @@ func (wm *WalletManager) EncodeInvokeRequest(abiInstance abi.ABI, contractAddres
 
 		var a []byte
 		switch input.Type.T {
-		//case abi.BoolTy:
-		//	a = common.NewString(abiArgs[i]).Bool()
-		//case abi.UintTy, abi.IntTy:
-		//	a, err = convertParamToNum(abiArgs[i], input.Type.Kind)
-		//case abi.AddressTy:
-		//	a = ethcom.HexToAddress(AppendOxToAddress(abiArgs[i]))
+		case abi.BoolTy:
+			if abiArgs[i] == "true" {
+				a = []byte{0x01}
+			} else {
+				a = []byte{0x00}
+			}
+		case abi.UintTy, abi.IntTy:
+			a, _ = convertParamToNum(abiArgs[i])
+		case abi.AddressTy:
+			a = []byte(abiArgs[i])
 		case abi.FixedBytesTy, abi.BytesTy, abi.HashTy:
 			a, _ = hex.DecodeString(abiArgs[i])
 		case abi.StringTy:
@@ -114,4 +120,24 @@ func (wm *WalletManager) EncodeInvokeRequest(abiInstance abi.ABI, contractAddres
 	}
 
 	return invokeRequest, nil
+}
+
+
+func convertParamToNum(param string) ([]byte, error) {
+	var (
+		base int
+		bInt *big.Int
+		err  error
+	)
+	if strings.HasPrefix(param, "0x") {
+		base = 16
+	} else {
+		base = 10
+	}
+	bInt, err = common.StringValueToBigInt(param, base)
+	if err != nil {
+		return nil, err
+	}
+
+	return bInt.Bytes(), nil
 }

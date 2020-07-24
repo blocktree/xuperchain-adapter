@@ -120,13 +120,13 @@ func testSubmitTransactionStep(tm *openw.WalletManager, rawTx *openwallet.RawTra
 func TestTransfer_XUPER(t *testing.T) {
 
 	addrs := []string{
-		//"Rvm1AE6rZwLpPFbcBfD7wZxXK3FR6QEXb",
+		"Rvm1AE6rZwLpPFbcBfD7wZxXK3FR6QEXb",
 		//"VVGQ86x5Kg5Zvt7F65UEELGPyTggccGNW",
 		//"WayY2YjxdvMFwj6PubSh3waZEWZamz1tJ",
 		//"mKagNVaU5XrgBi8jp2mvNGeGwK3mMUK1Z",
 		//"nY5SAYdKbvaarEAm3EcpzKkPubxKdMvd5",
 
-		"ahsTENdPBruBtjjJF53ioHAx1yk2HhjnU",
+		//"ahsTENdPBruBtjjJF53ioHAx1yk2HhjnU",
 		//"XC3333333333333333@xuper",
 	}
 
